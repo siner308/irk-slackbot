@@ -1,0 +1,8 @@
+version: '2'
+services:
+  slackbot:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile
+    restart: always
+    container_name: irkbot
