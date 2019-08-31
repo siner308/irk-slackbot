@@ -89,7 +89,7 @@ def run(robot, channel, user, tokens):
         try:
             distance = round(160 * ((sum(map(int, resonators)) / 8.0) ** 4) / 1000.0 * power_of_mods, 3)
         except:
-            text = '`뭔가 실수했군요!?`\n' \
+            text = '`뭔가 실수했군요?!`\n' \
                    '도움말은 `!링크` 또는 `!link`'
             is_success = False
 
