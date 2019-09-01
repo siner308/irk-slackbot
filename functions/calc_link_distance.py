@@ -5,7 +5,7 @@ from functions.decorators import on_command
 from gevent.monkey import patch_all
 from slack import slack_notify
 
-from settings import CHANNEL
+from settings import RED, ORANGE, GREEN
 
 patch_all()
 
@@ -56,6 +56,7 @@ def run(robot, channel, user, tokens):
     slack_message = None
     attachments_dict = dict()
     attachments_dict['fallback'] = BOT_NAME
+    attachments_dict['mrkdwn_in'] = ['text']
 
     tokens = list(tokens)
 
@@ -65,8 +66,7 @@ def run(robot, channel, user, tokens):
                '>*V*: Very Rare Link Amp\n' \
                '>*S*: Softbank Link Amp\n' \
                '>*R*: Rare Link Amp\n' \
-               'ex1) `!link 87665544 RR`\n' \
-               'ex2) `!링크 8766 SSRR`'
+               'ex1) `!link 87665544 RR` ex2) `!링크 8766 SSRR`'
         is_success = False
 
     if is_success:
@@ -83,6 +83,7 @@ def run(robot, channel, user, tokens):
             text = '`모드가 잘못되었습니다.` (V,S,R 조합으로 최대 4개까지!)\n' \
                    '도움말은 `!링크` 또는 `!link`'
             is_success = False
+            attachments_dict['color'] = RED
 
     if is_success:
         # calc link distance
@@ -92,15 +93,15 @@ def run(robot, channel, user, tokens):
             text = '`뭔가 실수했군요?!`\n' \
                    '도움말은 `!링크` 또는 `!link`'
             is_success = False
+            attachments_dict['color'] = RED
 
     if is_success:
+        attachments_dict['color'] = GREEN
         # reso count exception
-        if len(resonators) < 8:
-            text = '`레조네이터가 8개가 아닙니다. (8개보다 적으면 링크가 나가지 않아요)`\n' \
+        if len(resonators) > 8:
+            text = '`레조네이터가 8개보다 많이 입력하였습니다. (8개보다 적으면 링크가 나가지 않아요)`\n' \
                    '도움말은 `!링크` 또는 `!link`'
-        elif len(resonators) > 8:
-            text = '`레조네이터가 8개가 아닙니다. (8개보다 적으면 링크가 나가지 않아요)`\n' \
-                   '도움말은 `!링크` 또는 `!link`'
+            attachments_dict['color'] = RED
         else:
             # select notation
             if distance < 1:
@@ -109,6 +110,11 @@ def run(robot, channel, user, tokens):
             else:
                 text = '`%s km`' % distance
 
+            if len(resonators) < 8:
+                text += '\n`레조네이터가 8개가 아닙니다. (8개보다 적으면 링크가 나가지 않아요)`\n' \
+                       '도움말은 `!링크` 또는 `!link`'
+                attachments_dict['color'] = ORANGE
+
     attachments_dict['text'] = text
     attachments = [attachments_dict]
-    slack_notify(text=slack_message, channel=CHANNEL, username=BOT_NAME, attachments=attachments, icon_url=icon_url)
+    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, icon_url=icon_url)
