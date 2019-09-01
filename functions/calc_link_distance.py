@@ -5,7 +5,7 @@ from functions.decorators import on_command
 from gevent.monkey import patch_all
 from slack import slack_notify
 
-from settings import RED, ORANGE, GREEN
+from settings import RED, ORANGE, GREEN, ICON_URL
 
 patch_all()
 
@@ -49,7 +49,6 @@ table = {
 
 @on_command(['링크', 'link'])
 def run(robot, channel, user, tokens):
-    icon_url = 'https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/hum_reso_08.png'
     BOT_NAME = 'link-calculator'
     text = '고장났으면 신나를 외쳐!'
     is_success = True
@@ -117,4 +116,4 @@ def run(robot, channel, user, tokens):
 
     attachments_dict['text'] = text
     attachments = [attachments_dict]
-    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, icon_url=icon_url)
+    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, icon_url=ICON_URL)

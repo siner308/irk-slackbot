@@ -5,4 +5,15 @@ services:
       context: .
       dockerfile: ./compose/Dockerfile
     restart: always
-    container_name: irkbot
+    container_name: irkbot-listener
+    volumes:
+      - /mnt/irkbot/nginx:/var/www/html
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "5784:80"
+    restart: always
+    container_name: irkbot-nginx
+    volumes:
+      - /mnt/irkbot/nginx:/usr/share/nginx/html
