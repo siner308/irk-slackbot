@@ -2,21 +2,33 @@
 from __future__ import unicode_literals
 import os
 import datetime
-from time import sleep
+import time
+from random import choice
 
 from PIL import Image
 from functions.decorators import on_command
 from gevent.monkey import patch_all
 from slack import slack_notify
-from settings import BOT_NAME, ICON_URL, GOOGLE_EMAIL, GOOGLE_PASSWORD, STATIC_ROOT, SERVER_URL
-from functions.utils.chromedriver.setup import setup_chrome
+from settings import ZABGRESS_ICON_URL, GIPHY_ICON_URL, GOOGLE_EMAIL, GOOGLE_PASSWORD, \
+    STATIC_ROOT, SERVER_URL, CHANNEL, RED, ORANGE, CHROMEDRIVER_PATH, \
+    GREEN
+from chromedriver import setup_chrome
 from functions.utils.google.auth import signin_google
 from functions.utils.google.maps import get_location
+from functions.giphy import get_giphy_image_url
+from logger import get_logger
+
+logger = get_logger('irk')
 
 patch_all()
 
 @on_command(['인텔', 'intel'])
-def run(robot, channel, user, tokens):
+def run(robot=None, channel=None, user=None, tokens=None):
+    start_time = int(time.time())
+    driver = None
+    if not channel:
+        channel = CHANNEL
+
     BOT_NAME = 'intel'
     text = '`고장났으면 신나를 외쳐!`'
     is_success = True
@@ -27,7 +39,7 @@ def run(robot, channel, user, tokens):
 
     file_dir = STATIC_ROOT + '/screenshots/'
     origin_bounding_box = (20, 140, 1860, 880)
-    time = datetime.datetime.now()
+    now = datetime.datetime.now()
 
     tokens = list(tokens)
 
@@ -41,18 +53,19 @@ def run(robot, channel, user, tokens):
 
     if is_success:
         try:
-            driver = setup_chrome(STATIC_ROOT + '/functions/utils/chromedriver/chromedriver')
+            driver = setup_chrome()
         except Exception as e:
-            text += '\n%s' % e
+            logger.error(e)
             is_success = False
+            attachments_dict['color'] = RED
 
     if is_success:
         try:
             driver = signin_google(driver=driver, email=GOOGLE_EMAIL, password=GOOGLE_PASSWORD)
         except Exception as e:
-            text += '\n' \
-                    '>%s' % e
+            logger.error(e)
             is_success = False
+            attachments_dict['color'] = RED
 
     if is_success:
         # get response
@@ -60,17 +73,21 @@ def run(robot, channel, user, tokens):
         if not len(data['results']):
             is_success = False
             text = '`구글에 주소 데이터가 없습니다.`'
+            attachments_dict['color'] = RED
 
     # get address
     if is_success:
         try:
             address = data['results'][0]['formatted_address']
             text = '%s\n' \
-                   '`%s`' % (address, str(time))
-        except:
+                   '`%s`' % (address, str(now))
+        except Exception as e:
+            logger.error(e)
+            logger.error(data)
             is_success = False
             text = '`주소를 불러오는데 실패했습니다.`\n' \
                    '>%s' % data
+            attachments_dict['color'] = RED
 
     if is_success:
         try:
@@ -79,44 +96,69 @@ def run(robot, channel, user, tokens):
             edge_west = data['results'][0]['geometry']['viewport']['southwest']['lng']
             edge_east = data['results'][0]['geometry']['viewport']['northeast']['lng']
             width = edge_east - edge_west
-        except:
-            text = '`좌표를 불러오는데 실패했습니다.`\n' \
-                   '>%s' % data
+        except Exception as e:
+            logger.error(e)
+            logger.error(data)
             is_success = False
+            text = '`좌표를 불러오는데 실패했습니다.`'
+            attachments_dict['color'] = RED
 
     if is_success:
         all_portal_zoom = 0.08
-        wait_time = 60
         if width < all_portal_zoom:
             z = 15
         else:
             z = 13
             extra_z = 0
-            wait_time = 120
             while width > all_portal_zoom * (2 ** (2 + extra_z)):
                 extra_z += 1
-                wait_time += 20
             z -= extra_z
 
     if is_success:
         url = 'https://intel.ingress.com/intel?ll=%s,%s&z=%s' % (lat, lng, z)
-        attachments_dict['text'] = '최대한 빨리 보여드릴게요! (두근두근)'
+        attachments_dict['text'] = '`준비가 되는 동안 귀여운 거 보시죠`'
+        attachments_dict['fallback'] = '준비가 되는 동안 귀여운 거 보시죠'
+        giphy_queryset = ['puppy', 'dog', 'cat', 'kitten', 'rabbit', 'kangaroo']
+        attachments_dict['image_url'] = get_giphy_image_url(choice(giphy_queryset))
         attachments = [attachments_dict]
-        slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, icon_url=ICON_URL)
+        slack_notify(text=slack_message, channel=channel, username='giphy', attachments=attachments,
+                     icon_url=GIPHY_ICON_URL)
         try:
             driver.get(url)
-            loading_msg = driver.find_element_by_xpath('//*[@id="loading_msg"]')
-            while loading_msg.get_attribute("style") != 'display: none;':
-                loading_msg = driver.find_element_by_xpath('//*[@id="loading_msg"]')
-                sleep(1)
+            time.sleep(3)
+            print(driver.current_url)
+            if driver.title != 'Ingress Intel Map':
+                print(driver.title)
+                is_success = False
+                text = '고장났어!'
+                attachments_dict = dict()
+            while True and is_success:
+                current_time = int(time.time())
+                spent_time = current_time - start_time
+                if spent_time > 300:
+                    text = '너무 오래걸리는 지역이라서 이정도만 보여드릴게요!\n' \
+                           '%s' % text
+                    attachments_dict['color'] = ORANGE
+                    break
+                try:
+                    loading_msg = driver.find_element_by_xpath('//*[@id="loading_msg"]')
+                except:
+                    logger.error(driver.page_source)
+                    is_success = False
+                    text = '고장나면 신나!'
+                    attachments_dict = dict()
+                    break
+                if loading_msg.get_attribute("style") == 'display: none;':
+                    attachments_dict['color'] = GREEN
+                    break
+                time.sleep(1)
 
         except Exception as e:
-            text += '\n' \
-                    '>%s' % e
+            logger.error(e)
             is_success = False
 
     if is_success:
-        filename = time.strftime('%Y%m%d%H%M%S')
+        filename = now.strftime('%Y%m%d%H%M%S')
         png_file_path = file_dir + filename + '.png'
         jpg_file_path = file_dir + filename + '.jpg'
         try:
@@ -128,6 +170,7 @@ def run(robot, channel, user, tokens):
             file_url = SERVER_URL + '/screenshots/' + filename + '.jpg'
             os.remove(png_file_path)
             attachments_dict['image_url'] = file_url
+            attachments_dict['fallback'] = keyword
             attachments_dict['actions'] = [
                 {
                     "type": "button",
@@ -136,13 +179,20 @@ def run(robot, channel, user, tokens):
                 }
             ]
         except Exception as e:
-            text += '\n' \
-                    '>%s' % e
-            is_success = False
+            logger.error(e)
+
+    if driver:
+        if not is_success:
+            # logger.error(driver.page_source)
+            # logger.error(driver.title)
+            # logger.error(driver.current_url)
+            pass
+        driver.quit()
 
     attachments_dict['text'] = text
     attachments = [attachments_dict]
-    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, icon_url=ICON_URL)
+    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments,
+                 icon_url=ZABGRESS_ICON_URL)
 
 
 response = {

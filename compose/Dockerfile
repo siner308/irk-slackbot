@@ -20,12 +20,15 @@ RUN pip3 install -r /requirements.txt
 
 COPY ./robot.py /app/robot.py
 COPY ./settings.py /app/settings.py
+COPY ./logger.py /app/logger.py
 COPY ./slack.py /app/slack.py
+COPY ./chromedriver.py /app/chromedriver.py
+COPY ./chromedriver /app/chromedriver
 COPY ./functions /app/functions
 COPY ./compose/start /start
 
 RUN chmod +x /start \
-    && chmod +x /app/functions/utils/chromedriver/chromedriver \
+    && chmod +x /app/chromedriver \
     && mkdir -p /var/www/html/screenshots
  
 WORKDIR /app

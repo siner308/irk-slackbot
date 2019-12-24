@@ -4,7 +4,6 @@ from gevent.monkey import patch_all
 patch_all()
 
 import gevent
-import logging
 import traceback
 from gevent.pool import Pool
 from redis import StrictRedis
@@ -12,21 +11,13 @@ from importlib import import_module
 from slackclient import SlackClient
 
 from settings import APPS, SLACK_TOKEN, REDIS_URL, POOL_SIZE
-
+from logger import get_logger
 
 pool = Pool(POOL_SIZE)
 
 CMD_PREFIX = '!'
 
-logger = logging.getLogger('honey')
-logger.setLevel(logging.INFO)
-
-log_file_handler = logging.FileHandler('honey.log')
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-log_file_handler.setFormatter(formatter)
-logger.addHandler(log_file_handler)
+logger = get_logger('irk')
 
 
 class RedisBrain(object):
@@ -152,8 +143,7 @@ class Robot(object):
         while True:
             events = self.read_message()
             if events:
-                print('get message')
-                print(events)
+                logger.info(events)
                 messages = self.extract_messages(events)
                 for message in messages:
                     self.handle_message(message)

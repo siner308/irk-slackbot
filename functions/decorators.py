@@ -31,21 +31,23 @@ def on_command(commands):
             if commands:
                 tokens = _extract_tokens(message)
                 try:
-                    channel, message = func(robot, channel, user, tokens)
-                    if channel:
-                        if dict == type(message) and 'text' in message:
-                            robot.client.server.api_call(
-                                'chat.postMessage', channel=channel, **message
-                            )
-                        else:
-                            robot.client.rtm_send_message(channel, message)
-                        return message
-                    else:
-                        print("[Warn] Can not send to empty channel")
-                except:
-                    print("[Error] Can not deliver the message because...")
+                    #channel, message = func(robot=robot, channel=channel, user=user, tokens=tokens)
+                    func(robot=robot, channel=channel, user=user, tokens=tokens)
+                    #if channel:
+                    #    if dict == type(message) and 'text' in message:
+                    #        robot.client.server.api_call(
+                    #            'chat.postMessage', channel=channel, **message
+                    #        )
+                    #    else:
+                    #        robot.client.rtm_send_message(channel, message)
+                    #    return message
+                    #else:
+                    #    print("[Warn] Can not send to empty channel")
+                except Exception as e:
+#                    print("[Error] Can not deliver the message because...")
+                    print(e)
                     traceback.print_exc()
-                    print
+#                    print
             return None
         return _decorator
     return decorator

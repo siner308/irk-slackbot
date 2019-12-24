@@ -1,0 +1,23 @@
+version: '2'
+services:
+  slackbot-test:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile
+    restart: always
+    container_name: irkbot-listener-test
+    environment:
+      - TEST=true
+    volumes:
+      - /mnt/irkbot/nginx/html:/var/www/html
+      - /mnt/irkbot/log/bot:/var/log/irk
+
+  nginx-test:
+    image: nginx:alpine
+    ports:
+      - "3306:80"
+    restart: always
+    container_name: irkbot-nginx-test
+    volumes:
+      - /mnt/irkbot/nginx/html:/usr/share/nginx/html
+      - /mnt/irkbot/log/nginx:/var/log/nginx

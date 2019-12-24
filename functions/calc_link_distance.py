@@ -5,8 +5,11 @@ from functions.decorators import on_command
 from gevent.monkey import patch_all
 from slack import slack_notify
 
-from settings import RED, ORANGE, GREEN, ICON_URL
+from settings import RED, ORANGE, GREEN, ZABGRESS_ICON_URL
+from logger import get_logger
 
+
+logger = get_logger('irk')
 patch_all()
 
 table = {
@@ -67,53 +70,86 @@ def run(robot, channel, user, tokens):
                '>*R*: Rare Link Amp\n' \
                'ex1) `!link 87665544 RR` ex2) `!링크 8766 SSRR`'
         is_success = False
+    elif len(tokens) == 1:
+        has_mod = False
+    else:
+        has_mod = True
 
+    # check resonator
     if is_success:
-        resonators = tokens[0]
-        # select mod
-        try:
-            mods = ''.join(sorted(tokens[1].upper(), key=lambda m: {'V': 1, 'S': 2, 'R': 3}[m]))
-        except:
-            mods = ''
-
-        try:
-            power_of_mods = table[mods]
-        except:
-            text = '`모드가 잘못되었습니다.` (V,S,R 조합으로 최대 4개까지!)\n' \
+        resonators = list(tokens[0])
+        reso_count = len(resonators)
+        # reso count exception
+        if reso_count > 8:
+            text = '`레조네이터를 8개보다 많이 입력하였습니다.`\n' \
                    '도움말은 `!링크` 또는 `!link`'
-            is_success = False
             attachments_dict['color'] = RED
+            is_success = False
+        else:
+            sum = 0
+            for reso in resonators:
+                try:
+                    lv_reso = int(reso)
+                except Exception as e:
+                    logger.warn(e)
+                    logger.warn(tokens)
+                    is_success = False
+                    text = '`레조네이터가 잘못되었습니다`'
+                    attachments_dict['color'] = RED
+                    break
 
+                if lv_reso > 8:
+                    text = '`레조네이터의 레벨 범위는 0부터 8입니다.`'
+                    is_success = False
+                    attachments_dict['color'] = RED
+                    break
+                else:
+                    sum += lv_reso
+
+    # check mod
     if is_success:
-        # calc link distance
+        if has_mod:
+            try:
+                mods = ''.join(sorted(tokens[1].upper(), key=lambda m: {'V': 1, 'S': 2, 'R': 3}[m]))
+                power_of_mods = table[mods]
+            except Exception as e:
+                logger.warn(e)
+                logger.warn(tokens)
+                is_success = False
+                text = '`모드가 잘못되었습니다.` (V,S,R 조합으로 최대 4개까지!)\n' \
+                       '도움말은 `!링크` 또는 `!link`'
+                attachments_dict['color'] = RED
+        else:
+            power_of_mods = 1
+
+    # calc link distance
+    if is_success:
         try:
-            distance = round(160 * ((sum(map(int, resonators)) / 8.0) ** 4) / 1000.0 * power_of_mods, 3)
-        except:
+            distance = round(160 * ((sum / 8.0) ** 4) * power_of_mods, 3)
+        except Exception as e:
+            logger.warn(e)
+            logger.warn(tokens)
+            is_success = False
             text = '`뭔가 실수했군요?!`\n' \
                    '도움말은 `!링크` 또는 `!link`'
-            is_success = False
             attachments_dict['color'] = RED
 
+    # make message
     if is_success:
         attachments_dict['color'] = GREEN
-        # reso count exception
-        if len(resonators) > 8:
-            text = '`레조네이터가 8개보다 많이 입력하였습니다. (8개보다 적으면 링크가 나가지 않아요)`\n' \
-                   '도움말은 `!링크` 또는 `!link`'
-            attachments_dict['color'] = RED
+        # select notation
+        if distance > 1000:
+            distance /= 1000
+            text = '`%s km`' % distance
         else:
-            # select notation
-            if distance < 1:
-                distance *= 1000
-                text = '`%s m`' % distance
-            else:
-                text = '`%s km`' % distance
+            text = '`%s m`' % distance
 
-            if len(resonators) < 8:
-                text += '\n`레조네이터가 8개가 아닙니다. (8개보다 적으면 링크가 나가지 않아요)`\n' \
-                       '도움말은 `!링크` 또는 `!link`'
-                attachments_dict['color'] = ORANGE
+        if reso_count < 8:  # += 문법때문에 아래에 위치한 코드
+            text += '\n`레조네이터가 8개보다 적으면 링크가 나가지 않아요`\n' \
+                   '도움말은 `!링크` 또는 `!link`'
+            attachments_dict['color'] = ORANGE
 
     attachments_dict['text'] = text
     attachments = [attachments_dict]
-    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, icon_url=ICON_URL)
+    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, \
+                 icon_url=ZABGRESS_ICON_URL)
