@@ -35,18 +35,7 @@ def on_command(commands):
             if commands:
                 tokens = _extract_tokens(message)
                 try:
-                    channel, message = func(robot, channel, user, tokens)
-                    robot.logger.debug('[Debug] message: {}'.format(message))
-                    if channel:
-                        if dict == type(message) and 'text' in message:
-                            robot.client.api_call(
-                                'chat.postMessage', channel=channel, **message
-                            )
-                        else:
-                            robot.client.rtm_send_message(channel, str(message))
-                        return message
-                    else:
-                        robot.logger.warning('Can not send to empty channel')
+                    func(robot, channel, user, tokens)
                 except:
                     robot.logger.error('Can not deliver the message because...')
                     robot.logger.error(traceback.format_exc())

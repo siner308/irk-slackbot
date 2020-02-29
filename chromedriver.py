@@ -1,7 +1,6 @@
 from selenium import webdriver
 
 from apps.utils.google.auth import sign_in_google_from_intel_map
-from logger import log_or_print
 from settings import CHROMEDRIVER_PATH
 from datetime import datetime
 
@@ -22,11 +21,11 @@ class ChromeDriver:
     lock_id = None
     locked_at = None
 
-    def __init__(self):
-        log_or_print('Initialize ChromeDriver Start...')
+    def __init__(self, robot):
+        robot.logger.info('Initialize ChromeDriver Start...')
         self.driver = setup_chrome()
-        self.get_intel_map()
-        log_or_print('Initialize ChromeDriver Complete...')
+        self.driver = sign_in_google_from_intel_map(self.driver, robot)
+        robot.logger.info('Initialize ChromeDriver Complete...')
 
     def lock(self, lock_id):
         if not self.check_lock():
@@ -41,7 +40,4 @@ class ChromeDriver:
 
     def check_lock(self):
         return self.lock_id
-
-    def get_intel_map(self):
-        self.driver = sign_in_google_from_intel_map(self.driver)
 

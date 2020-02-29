@@ -2,15 +2,9 @@
 from __future__ import unicode_literals
 
 from . import on_command
-from gevent.monkey import patch_all
-from slack import slack_notify
 
 from settings import RED, ORANGE, GREEN, ZABGRESS_ICON_URL
-from logger import get_logger
 
-
-logger = get_logger('irk')
-patch_all()
 
 table = {
     '': 1.000,
@@ -50,8 +44,10 @@ table = {
     'VVVV': 10.500,
 }
 
+
 @on_command(['링크', 'link'])
 def run(robot, channel, user, tokens):
+    '''레저네이터, 모드 상태에 따른 링크거리를 알려드려요'''
     BOT_NAME = 'link-calculator'
     text = '고장났으면 신나를 외쳐!'
     is_success = True
@@ -91,8 +87,8 @@ def run(robot, channel, user, tokens):
                 try:
                     lv_reso = int(reso)
                 except Exception as e:
-                    logger.warn(e)
-                    logger.warn(tokens)
+                    robot.logger.warn(e)
+                    robot.logger.warn(tokens)
                     is_success = False
                     text = '`레조네이터가 잘못되었습니다`'
                     attachments_dict['color'] = RED
@@ -113,8 +109,8 @@ def run(robot, channel, user, tokens):
                 mods = ''.join(sorted(tokens[1].upper(), key=lambda m: {'V': 1, 'S': 2, 'R': 3}[m]))
                 power_of_mods = table[mods]
             except Exception as e:
-                logger.warn(e)
-                logger.warn(tokens)
+                robot.logger.warn(e)
+                robot.logger.warn(tokens)
                 is_success = False
                 text = '`모드가 잘못되었습니다.` (V,S,R 조합으로 최대 4개까지!)\n' \
                        '도움말은 `!링크` 또는 `!link`'
@@ -127,8 +123,8 @@ def run(robot, channel, user, tokens):
         try:
             distance = round(160 * ((sum / 8.0) ** 4) * power_of_mods, 3)
         except Exception as e:
-            logger.warn(e)
-            logger.warn(tokens)
+            robot.logger.warn(e)
+            robot.logger.warn(tokens)
             is_success = False
             text = '`뭔가 실수했군요?!`\n' \
                    '도움말은 `!링크` 또는 `!link`'
@@ -151,5 +147,5 @@ def run(robot, channel, user, tokens):
 
     attachments_dict['text'] = text
     attachments = [attachments_dict]
-    slack_notify(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments, \
-                 icon_url=ZABGRESS_ICON_URL)
+    robot.slacker.chat.post_message(text=slack_message, channel=channel, username=BOT_NAME, attachments=attachments,
+                                    icon_url=ZABGRESS_ICON_URL)

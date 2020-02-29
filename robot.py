@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 from settings import APPS, CMD_PREFIX, CMD_LENGTH, MAX_WORKERS, SLACK_TOKEN
 from chromedriver import ChromeDriver
-from logger import log_or_print
+from logger import logger
 
 
 def extract_messages(events):
@@ -42,7 +42,7 @@ def load_apps():
 
     for name in APPS:
         app = import_module('apps.%s' % name)
-        docs.append('{0}{1}: {2}'.format(
+        docs.append('`{0}{1}` {2}'.format(
             CMD_PREFIX, ', '.join(app.run.commands), app.run.__doc__
         ))
         for command in app.run.commands:
@@ -55,8 +55,9 @@ class Robot(object):
     def __init__(self):
         self.client = SlackClient(SLACK_TOKEN)
         self.slacker = Slacker(SLACK_TOKEN)
-        self.chrome = ChromeDriver()
         self.apps, self.docs = load_apps()
+        self.logger = logger
+        self.chrome = ChromeDriver(self)
 
     def handle_message(self, message):
         channel, user, text = message
@@ -72,13 +73,13 @@ class Robot(object):
         try:
             app.run(self, channel, user, payloads)
         except:
-            log_or_print(traceback.format_exc())
+            self.logger.error(traceback.format_exc())
 
     def rtm_connect(self):
         while not self.client.rtm_connect(with_team_state=False):
-            log_or_print('RTM Connecting...')
+            self.logger.info('RTM Connecting...')
             time.sleep(1)
-        log_or_print('RTM Connected.')
+        self.logger.info('RTM Connected.')
 
     def read_message(self):
         try:
@@ -86,7 +87,7 @@ class Robot(object):
         except KeyboardInterrupt as e:
             raise e
         except Exception as e:
-            log_or_print(traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             self.rtm_connect()
 
     def run(self):
@@ -105,14 +106,14 @@ class Robot(object):
                         try:
                             executor.map(self.handle_message, messages)
                         except TimeoutError:
-                            log_or_print(traceback.format_exc())
+                            self.logger.error(traceback.format_exc())
             else:
                 time.sleep(0.3)
 
     def disconnect(self):
         if self.client and self.client.server and self.client.server.websocket:
             self.client.server.websocket.close()
-        log_or_print('RTM disconnected.')
+        self.logger.info('RTM disconnected.')
 
 
 if '__main__' == __name__:
@@ -122,8 +123,8 @@ if '__main__' == __name__:
         robot.run()
         print('Initialize Robot Complete...')
     except KeyboardInterrupt as e:
-        log_or_print('Honey Shutdown By User.')
+        robot.logger.info('Honey Shutdown By User.')
     finally:
         robot.disconnect()
-        log_or_print('Honey Shutdown.')
+        robot.logger.info('Honey Shutdown.')
         traceback.print_exc(file=sys.stdout)

@@ -9,6 +9,8 @@ services:
     volumes:
       - /mnt/irkbot/nginx/html:/var/www/html
       - /mnt/irkbot/log/bot:/var/log/irk
+    environment:
+      - TEST=True
 
   nginx:
     image: nginx:alpine

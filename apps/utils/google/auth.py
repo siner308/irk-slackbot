@@ -5,12 +5,11 @@ from time import sleep
 from bs4 import BeautifulSoup
 
 # local
-from logger import log_or_print
 from settings import GOOGLE_EMAIL, GOOGLE_PASSWORD, INGRESS_AGENT_NAME
 
 
-def sign_in_google_from_intel_map(driver):
-    log_or_print('Signing In Google From Intel Map...')
+def sign_in_google_from_intel_map(driver, robot):
+    robot.logger.info('Signing In Google From Intel Map...')
     url = 'https://intel.ingress.com'
     google_sign_in_url = None
     driver.get(url)
@@ -21,7 +20,7 @@ def sign_in_google_from_intel_map(driver):
         href = a_tag.get('href')
         if href.find('accounts.google.com') and href.find('intel.ingress.com'):
             google_sign_in_url = href
-            log_or_print(google_sign_in_url)
+            robot.logger.info(google_sign_in_url)
             break
 
     if not google_sign_in_url:
@@ -39,10 +38,10 @@ def sign_in_google_from_intel_map(driver):
     sleep(1)
 
     # Check Success
-    log_or_print('Finding Agent Name from Page Source...')
+    robot.logger.info('Finding Agent Name from Page Source...')
     while driver.page_source.find(INGRESS_AGENT_NAME) == -1:
         sleep(1)
-    log_or_print('Sign In Google Complete!!!')
+    robot.logger.info('Sign In Google Complete!!!')
     sleep(1)
-    log_or_print(driver.page_source)
+    robot.logger.info(driver.page_source)
     return driver
