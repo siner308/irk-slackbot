@@ -24,7 +24,7 @@ COPY ./logger.py /app/logger.py
 COPY ./slack.py /app/slack.py
 COPY ./chromedriver.py /app/chromedriver.py
 COPY ./chromedriver /app/chromedriver
-COPY ./functions /app/functions
+COPY ./apps /app/apps
 COPY ./compose/start /start
 
 RUN chmod +x /start \
