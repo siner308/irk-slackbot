@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 # python
 import os
 import datetime
@@ -12,12 +9,12 @@ from uuid import uuid4
 from PIL import Image
 
 # local
-from functions.decorators import on_command
+from . import on_command
 from logger import log_or_print
 from slack import slack_notify
 from settings import ZABGRESS_ICON_URL, GIPHY_ICON_URL, STATIC_ROOT, SERVER_URL, CHANNEL, RED, ORANGE, GREEN, BOT_NAME
-from functions.utils.google.maps import get_location
-from functions.giphy import get_giphy_image_url
+from apps.utils.google.maps import get_location
+from apps.giphy import get_giphy_image_url
 
 
 @on_command(['인텔', 'intel'])
@@ -213,3 +210,4 @@ def run(robot=None, channel=None, user=None, tokens=None):
     robot.chrome.unlock()
     slack_notify(channel=channel, username=BOT_NAME, attachments_dict=attachments_dict,
                  icon_url=ZABGRESS_ICON_URL)
+    return

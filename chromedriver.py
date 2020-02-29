@@ -1,6 +1,6 @@
 from selenium import webdriver
 
-from functions.utils.google.auth import sign_in_google_from_intel_map
+from apps.utils.google.auth import sign_in_google_from_intel_map
 from logger import log_or_print
 from settings import CHROMEDRIVER_PATH
 from datetime import datetime

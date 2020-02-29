@@ -1,39 +1,17 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
+import os
 import sys
-import gevent
-import traceback
+sys.path.append(os.path.abspath('.'))
 
-from gevent.pool import Pool
+import time
+import traceback
 from importlib import import_module
 from slackclient import SlackClient
 from slacker import Slacker
-from gevent.monkey import patch_all
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
+from settings import APPS, CMD_PREFIX, CMD_LENGTH, MAX_WORKERS, SLACK_TOKEN
 from chromedriver import ChromeDriver
-from settings import APPS, SLACK_TOKEN, POOL_SIZE
-from logger import get_logger
-
-patch_all()
-pool = Pool(POOL_SIZE)
-CMD_PREFIX = '!'
-logger = get_logger('irk')
-
-
-def load_apps():
-    docs = ['=' * 14, 'Usage', '=' * 14]
-    apps = {}
-
-    for name in APPS:
-        app = import_module('functions.%s' % name)
-        docs.append(
-            '!%s: %s' % (', '.join(app.run.commands), app.run.__doc__)
-        )
-        for command in app.run.commands:
-            apps[command] = app
-
-    return apps, docs
+from logger import log_or_print
 
 
 def extract_messages(events):
@@ -48,14 +26,29 @@ def extract_messages(events):
 
 
 def extract_command(text):
-    if CMD_PREFIX != text[0]:
+    if CMD_PREFIX and CMD_PREFIX != text[0]:
         return None, None
 
     tokens = text.split(' ', 1)
     if 1 < len(tokens):
-        return tokens[0][1:], tokens[1]
+        return tokens[0][CMD_LENGTH:], tokens[1]
     else:
-        return text[1:], ''
+        return text[CMD_LENGTH:], ''
+
+
+def load_apps():
+    docs = ['=' * 14, 'Usage', '=' * 14]
+    apps = {}
+
+    for name in APPS:
+        app = import_module('apps.%s' % name)
+        docs.append('{0}{1}: {2}'.format(
+            CMD_PREFIX, ', '.join(app.run.commands), app.run.__doc__
+        ))
+        for command in app.run.commands:
+            apps[command] = app
+
+    return apps, docs
 
 
 class Robot(object):
@@ -77,46 +70,60 @@ class Robot(object):
             return
 
         try:
-            pool.apply_async(func=app.run,
-                             args=(self, channel, user, payloads))
+            app.run(self, channel, user, payloads)
         except:
-            traceback.print_exc()
+            log_or_print(traceback.format_exc())
 
     def rtm_connect(self):
-        try:
-            conn = self.client.rtm_connect()
-        except:
-            logger.error(traceback.format_exc())
-        else:
-            return conn
+        while not self.client.rtm_connect(with_team_state=False):
+            log_or_print('RTM Connecting...')
+            time.sleep(1)
+        log_or_print('RTM Connected.')
 
     def read_message(self):
-        events = None
         try:
-            events = self.client.rtm_read()
-        except:
+            return self.client.rtm_read()
+        except KeyboardInterrupt as e:
+            raise e
+        except Exception as e:
+            log_or_print(traceback.format_exc())
             self.rtm_connect()
-        return events
 
     def run(self):
-        if not self.rtm_connect():
-            raise RuntimeError('Can not connect to slack client. Check your settings.')
+        self.rtm_connect()
+        if not self.client.server.connected:
+            raise RuntimeError(
+                'Can not connect to slack client. Check your settings.'
+            )
 
         while True:
             events = self.read_message()
             if events:
-                logger.info(events)
                 messages = extract_messages(events)
-                for message in messages:
-                    self.handle_message(message)
-            gevent.sleep(0.3)
+                if messages:
+                    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                        try:
+                            executor.map(self.handle_message, messages)
+                        except TimeoutError:
+                            log_or_print(traceback.format_exc())
+            else:
+                time.sleep(0.3)
+
+    def disconnect(self):
+        if self.client and self.client.server and self.client.server.websocket:
+            self.client.server.websocket.close()
+        log_or_print('RTM disconnected.')
 
 
 if '__main__' == __name__:
+    print('Initialize Robot Start...')
+    robot = Robot()
     try:
-        print('Initialize Robot Start...')
-        robot = Robot()
-        print('Initialize Robot Complete...')
         robot.run()
-    except:
+        print('Initialize Robot Complete...')
+    except KeyboardInterrupt as e:
+        log_or_print('Honey Shutdown By User.')
+    finally:
+        robot.disconnect()
+        log_or_print('Honey Shutdown.')
         traceback.print_exc(file=sys.stdout)

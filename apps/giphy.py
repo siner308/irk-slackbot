@@ -1,7 +1,7 @@
 
 # coding: utf-8
 from __future__ import unicode_literals
-from functions.decorators import on_command
+from . import on_command
 
 # from gevent.monkey import patch_all
 # patch_all()
