@@ -1,32 +1,69 @@
-# coding: utf-8
 import os
 
+# # # # # # # # # # # #
+# Honey Configuration #
+# # # # # # # # # # # #
 
-try:
-    test = os.environ['TEST']
-except:
-    test = None
+# command prefix
+CMD_PREFIX = '!'
+CMD_LENGTH = len(CMD_PREFIX)
 
-if test:
-    SLACK_TOKEN = 'test_token'
-    CHANNEL = '#test_channel'
-else:
-    SLACK_TOKEN = 'prod_token'
-    CHANNEL = '#prod_channel'
-
-BOT_NAME = 'bot_name'
-REDIS_URL = None
-
-MONGO_HOST = '123.456.789.012'
-MONGO_PORT = 12345
-MONGO_DATABASE = 'db_name'
-
-# gevent pool size
-POOL_SIZE = 20
+# number of workers
+MAX_WORKERS = 20
 
 # add your app name to this list
 APPS = [
-    'calc_hack_cooltime',
+    # 'calc_hack_cooltime',
     'calc_link_distance',
-    'get_intel_screenshot',
+    'ingress_intel',
+    'helper',
+    # 'giphy',
 ]
+
+# # # # # # # # # # # #
+# Siner Configuration #
+# # # # # # # # # # # #
+try:
+    TEST = os.environ['TEST']
+except:
+    TEST = None
+
+if TEST:
+    SLACK_TOKEN = ''
+    CHANNEL = ''
+    SERVER_URL = ''
+    LOG_DIR = './'
+else:
+    SLACK_TOKEN = ''
+    CHANNEL = ''
+    SERVER_URL = ''
+    LOG_DIR = ''
+
+STATIC_ROOT = '/var/www/html'
+CHROMEDRIVER_PATH = os.path.dirname(os.path.realpath(__file__)) + '/chromedriver'
+# CHROMEDRIVER_PATH = './chromedriver'
+
+# Slack
+BOT_NAME = ''
+ZABGRESS_ICON_URL = ''
+GIPHY_ICON_URL = ''
+
+# Ingress
+GOOGLE_EMAIL = ''
+GOOGLE_PASSWORD = ''
+INGRESS_AGENT_NAME = ''
+GOOGLE_MAP_KEY = ''
+
+# Giphy
+GIPHY_KEY = ''
+
+# MongoDB
+MONGO_HOST = ''
+MONGO_PORT = 21025
+MONGO_DATABASE = ''
+
+# Color
+RED = '#FF0000'
+GREEN = '#008000'
+ORANGE = '#FFA500'
+
