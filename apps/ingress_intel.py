@@ -45,12 +45,12 @@ def run(robot, channel, user, tokens):
     if not robot.chrome.check_lock():
         lock_id = uuid4()
         if not (robot.chrome.lock(lock_id=lock_id)):
-            attachments_dict['text'] = '`지금 사용중인 유저가 있습니다. 잠시만 기다려주세요` [ERR01]'
+            attachments_dict['text'] = '`%s에 사용을 시작한 유저가 있습니다. 잠시만 기다려주세요`' % robot.chrome.locked_at
             robot.slacker.chat.post_message(channel=channel, attachments=[attachments_dict], username=BOT_NAME,
                                             icon_url=ZABGRESS_ICON_URL)
             return
     else:
-        attachments_dict['text'] = '`지금 사용중인 유저가 있습니다. 잠시만 기다려주세요` [ERR02]'
+        attachments_dict['text'] = '`%s에 사용을 시작한 유저가 있습니다. 잠시만 기다려주세요`' % robot.chrome.locked_at
         robot.slacker.chat.post_message(channel=channel, attachments=[attachments_dict], username=BOT_NAME,
                                         icon_url=ZABGRESS_ICON_URL)
         return
@@ -194,6 +194,7 @@ def run(robot, channel, user, tokens):
         os.remove(png_file_path)
         attachments_dict['image_url'] = file_url
         attachments_dict['fallback'] = keyword
+        attachments_dict['text'] = message
         attachments_dict['actions'] = [
             {
                 "type": "button",
