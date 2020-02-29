@@ -107,6 +107,7 @@ class Robot(object):
         while True:
             events = self.read_message()
             if events:
+                self.logger.info(events)
                 messages = extract_messages(events)
                 for message in messages:
                     self.handle_message(message)

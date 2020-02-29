@@ -138,8 +138,7 @@ def run(robot, channel, user, tokens):
     robot.logger.info('[%s] Getting Intel Map...' % (time.time() - start_time))
     url = 'https://intel.ingress.com/intel?ll=%s,%s&z=%s' % (lat, lng, z)
     robot.logger.info(url)
-    robot.pool.apply_async(func=robot.chrome.driver.get,
-                           args=(url,))
+    robot.chrome.driver.get(url)
     time.sleep(1)
 
     robot.logger.info('[%s] %s (lat: %s, lng: %s, z: %s)' % ((time.time() - start_time), keyword, lat, lng, z))
