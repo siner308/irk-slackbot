@@ -1,12 +1,19 @@
-import time
+# python
+from time import sleep
+
+# library
 from bs4 import BeautifulSoup
 
+# local
+from logger import log_or_print
+from settings import GOOGLE_EMAIL, GOOGLE_PASSWORD, INGRESS_AGENT_NAME
 
-def signin_google(driver, email, password):
+
+def sign_in_google_from_intel_map(driver):
+    log_or_print('Signing In Google From Intel Map...')
     url = 'https://intel.ingress.com'
     google_sign_in_url = None
     driver.get(url)
-    time.sleep(3)
 
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     a_tags = soup.find_all('a')
@@ -14,24 +21,28 @@ def signin_google(driver, email, password):
         href = a_tag.get('href')
         if href.find('accounts.google.com') and href.find('intel.ingress.com'):
             google_sign_in_url = href
-            print(google_sign_in_url)
+            log_or_print(google_sign_in_url)
             break
 
     if not google_sign_in_url:
         raise ValueError
 
     driver.get(google_sign_in_url)
-    time.sleep(3)
-    driver.find_element_by_name('Email').send_keys(email)
+    sleep(1)
+    driver.find_element_by_name('Email').send_keys(GOOGLE_EMAIL)
     driver.find_element_by_name('signIn').click()
-    time.sleep(1)
-    driver.find_element_by_name('Passwd').send_keys(password)
-    driver.find_element_by_name('signIn').click()
-    time.sleep(1)
-    try:
-        driver.find_element_by_id('submit_approve_access').click()
-        time.sleep(3)
-    except Exception as e:
-        print(e)
-        raise Exception
+    sleep(1)
+    driver.find_element_by_name('Passwd').send_keys(GOOGLE_PASSWORD)
+    driver.find_element_by_id('submit').click()
+    sleep(1)
+    driver.find_element_by_id('submit_approve_access').click()
+    sleep(1)
+
+    # Check Success
+    log_or_print('Finding Agent Name from Page Source...')
+    while driver.page_source.find(INGRESS_AGENT_NAME) == -1:
+        sleep(1)
+    log_or_print('Sign In Google Complete!!!')
+    sleep(1)
+    log_or_print(driver.page_source)
     return driver

@@ -1,0 +1,84 @@
+{
+  "results": [
+    {
+      "formatted_address": "508 Pungnap-dong, Songpa-gu, Seoul, South Korea",
+      "geometry": {
+        "location": {
+          "lng": 127.1128253,
+          "lat": 37.5294471
+        },
+        "location_type": "ROOFTOP",
+        "viewport": {
+          "southwest": {
+            "lng": 127.1114763197085,
+            "lat": 37.5280981197085
+          },
+          "northeast": {
+            "lng": 127.1141742802915,
+            "lat": 37.5307960802915
+          }
+        }
+      },
+      "types": [
+        "establishment",
+        "point_of_interest"
+      ],
+      "plus_code": {
+        "global_code": "8Q99G4H7+Q4",
+        "compound_code": "G4H7+Q4 Seoul, South Korea"
+      },
+      "place_id": "ChIJM-1YD0OlfDURcy4Pk5T1iBA",
+      "address_components": [
+        {
+          "long_name": "508",
+          "short_name": "508",
+          "types": [
+            "premise"
+          ]
+        },
+        {
+          "long_name": "Pungnap-dong",
+          "short_name": "Pungnap-dong",
+          "types": [
+            "political",
+            "sublocality",
+            "sublocality_level_2"
+          ]
+        },
+        {
+          "long_name": "Songpa-gu",
+          "short_name": "Songpa-gu",
+          "types": [
+            "political",
+            "sublocality",
+            "sublocality_level_1"
+          ]
+        },
+        {
+          "long_name": "Seoul",
+          "short_name": "Seoul",
+          "types": [
+            "administrative_area_level_1",
+            "political"
+          ]
+        },
+        {
+          "long_name": "South Korea",
+          "short_name": "KR",
+          "types": [
+            "country",
+            "political"
+          ]
+        },
+        {
+          "long_name": "138-040",
+          "short_name": "138-040",
+          "types": [
+            "postal_code"
+          ]
+        }
+      ]
+    }
+  ],
+  "status": "OK"
+}

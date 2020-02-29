@@ -1,88 +1,74 @@
 # coding: utf-8
 from __future__ import unicode_literals
-from gevent.monkey import patch_all
-patch_all()
 
+import sys
 import gevent
 import traceback
+
 from gevent.pool import Pool
-from redis import StrictRedis
 from importlib import import_module
 from slackclient import SlackClient
+from slacker import Slacker
+from gevent.monkey import patch_all
 
-from settings import APPS, SLACK_TOKEN, REDIS_URL, POOL_SIZE
+from chromedriver import ChromeDriver
+from settings import APPS, SLACK_TOKEN, POOL_SIZE
 from logger import get_logger
 
+patch_all()
 pool = Pool(POOL_SIZE)
-
 CMD_PREFIX = '!'
-
 logger = get_logger('irk')
 
 
-class RedisBrain(object):
-    def __init__(self):
-        self.redis = None
-        if REDIS_URL:
-            try:
-                self.redis = StrictRedis(host=REDIS_URL)
-            except:
-                logger.error(traceback.format_exc())
+def load_apps():
+    docs = ['=' * 14, 'Usage', '=' * 14]
+    apps = {}
 
-    def set(self, key, value):
-        if self.redis:
-            self.redis.set(key, value)
-            return True
-        else:
-            return False
+    for name in APPS:
+        app = import_module('functions.%s' % name)
+        docs.append(
+            '!%s: %s' % (', '.join(app.run.commands), app.run.__doc__)
+        )
+        for command in app.run.commands:
+            apps[command] = app
 
-    def get(self, key):
-        if self.redis:
-            return self.redis.get(key)
-        return None
+    return apps, docs
 
-    def lpush(self, key, value):
-        if self.redis:
-            self.redis.lpush(key, value)
-            return True
-        else:
-            return False
 
-    def lpop(self, key):
-        if self.redis:
-            return self.redis.lpop(key)
-        return None
+def extract_messages(events):
+    messages = []
+    for event in events:
+        channel = event.get('channel', '')
+        user = event.get('user', '')
+        text = event.get('text', '')
+        if channel and user and text:
+            messages.append((channel, user, text))
+    return messages
 
-    def lindex(self, key):
-        if self.redis:
-            return self.redis.lindex(key)
-        return None
+
+def extract_command(text):
+    if CMD_PREFIX != text[0]:
+        return None, None
+
+    tokens = text.split(' ', 1)
+    if 1 < len(tokens):
+        return tokens[0][1:], tokens[1]
+    else:
+        return text[1:], ''
 
 
 class Robot(object):
     def __init__(self):
         self.client = SlackClient(SLACK_TOKEN)
-        self.brain = RedisBrain()
-        self.apps, self.docs = self.load_apps()
-
-    def load_apps(self):
-        docs = ['='*14, 'Usage', '='*14]
-        apps = {}
-
-        for name in APPS:
-            app = import_module('functions.%s' % name)
-            docs.append(
-                '!%s: %s' % (', '.join(app.run.commands), app.run.__doc__)
-            )
-            for command in app.run.commands:
-                apps[command] = app
-
-        return apps, docs
+        self.slacker = Slacker(SLACK_TOKEN)
+        self.chrome = ChromeDriver()
+        self.apps, self.docs = load_apps()
 
     def handle_message(self, message):
         channel, user, text = message
 
-        command, payloads = self.extract_command(text)
+        command, payloads = extract_command(text)
         if not command:
             return
 
@@ -96,28 +82,7 @@ class Robot(object):
         except:
             traceback.print_exc()
 
-    def extract_messages(self, events):
-        messages = []
-        for event in events:
-            channel = event.get('channel', '')
-            user = event.get('user', '')
-            text = event.get('text', '')
-            if channel and user and text:
-                messages.append((channel, user, text))
-        return messages
-
-    def extract_command(self, text):
-        if CMD_PREFIX != text[0]:
-            return (None, None)
-
-        tokens = text.split(' ', 1)
-        if 1 < len(tokens):
-            return tokens[0][1:], tokens[1]
-        else:
-            return (text[1:], '')
-
     def rtm_connect(self):
-        conn = None
         try:
             conn = self.client.rtm_connect()
         except:
@@ -130,27 +95,28 @@ class Robot(object):
         try:
             events = self.client.rtm_read()
         except:
-            logger.error(traceback.format_exc())
             self.rtm_connect()
         return events
 
     def run(self):
         if not self.rtm_connect():
-            raise RuntimeError(
-                'Can not connect to slack client. Check your settings.'
-            )
+            raise RuntimeError('Can not connect to slack client. Check your settings.')
 
         while True:
             events = self.read_message()
             if events:
                 logger.info(events)
-                messages = self.extract_messages(events)
+                messages = extract_messages(events)
                 for message in messages:
                     self.handle_message(message)
             gevent.sleep(0.3)
 
 
 if '__main__' == __name__:
-    robot = Robot()
-    print('initialize success')
-    robot.run()
+    try:
+        print('Initialize Robot Start...')
+        robot = Robot()
+        print('Initialize Robot Complete...')
+        robot.run()
+    except:
+        traceback.print_exc(file=sys.stdout)

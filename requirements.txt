@@ -4,7 +4,6 @@ googlemaps==3.1.1
 greenlet==0.4.15
 Pillow==6.2.0
 pymongo==3.9.0
-redis==3.3.8
 requests==2.22.0
 selenium==3.141.0
 slacker==0.13.0
