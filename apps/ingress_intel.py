@@ -10,13 +10,14 @@ from PIL import Image
 
 # local
 from . import on_command
-from settings import ZABGRESS_ICON_URL, GIPHY_ICON_URL, STATIC_ROOT, SERVER_URL, CHANNEL, RED, ORANGE, GREEN, BOT_NAME
+from settings import ZABGRESS_ICON_URL, GIPHY_ICON_URL, STATIC_ROOT, SERVER_URL, CHANNEL, RED, ORANGE, GREEN, BOT_NAME, \
+    MAX_LOAD_TIME
 from apps.utils.google.maps import get_location
 from apps.giphy import get_giphy_image_url
 
 
 @on_command(['인텔', 'intel'])
-def run(robot=None, channel=None, user=None, tokens=None):
+def run(robot, channel, user, tokens):
     '''인텔 스크린샷 찍어드려요'''
     start_time = int(time.time())
     if not channel:
@@ -133,11 +134,14 @@ def run(robot=None, channel=None, user=None, tokens=None):
                                         icon_url=GIPHY_ICON_URL)
         attachments_dict['image_url'] = None
 
-# Getting Intel Map
+    # Getting Intel Map
     robot.logger.info('[%s] Getting Intel Map...' % (time.time() - start_time))
     url = 'https://intel.ingress.com/intel?ll=%s,%s&z=%s' % (lat, lng, z)
     robot.logger.info(url)
-    robot.chrome.driver.get(url)
+    robot.pool.apply_async(func=robot.chrome.driver.get,
+                           args=(url,))
+    time.sleep(1)
+
     robot.logger.info('[%s] %s (lat: %s, lng: %s, z: %s)' % ((time.time() - start_time), keyword, lat, lng, z))
     if robot.chrome.driver.title != 'Ingress Intel Map':
         attachments_dict['text'] = '지도를 불러오는 데 실패했어요 ㅠㅠ'
@@ -146,14 +150,13 @@ def run(robot=None, channel=None, user=None, tokens=None):
                                         icon_url=GIPHY_ICON_URL)
         robot.chrome.unlock()
         return
-
     while True:
         current_time = int(time.time())
         spent_time = current_time - start_time
         robot.logger.info(spent_time)
 
         # Timeout
-        if spent_time > 60:
+        if spent_time > MAX_LOAD_TIME:
             attachments_dict['text'] = '너무 오래걸리는 지역이라서 이정도만 보여드릴게요!\n' \
                                        '%s' % message
             attachments_dict['color'] = ORANGE
@@ -161,7 +164,7 @@ def run(robot=None, channel=None, user=None, tokens=None):
 
         # Get Loading Percent
         try:
-            loading_msg = robot.chrome.driver.find_element_by_xpath('//*[@id="loading_msg"]')
+            loading_msg = robot.chrome.driver.find_element_by_id('loading_msg')
         except Exception as e:
             robot.logger.info(e)
             robot.logger.info(robot.chrome.driver.page_source)
@@ -183,21 +186,13 @@ def run(robot=None, channel=None, user=None, tokens=None):
     png_file_path = file_dir + filename + '.png'
     jpg_file_path = file_dir + filename + '.jpg'
     try:
-        robot.logger.info('A')
         robot.chrome.driver.save_screenshot(png_file_path)
-        robot.logger.info('B')
         base_image = Image.open(png_file_path)
-        robot.logger.info('C')
         cropped_image = base_image.crop(origin_bounding_box)
-        robot.logger.info('D')
         rgb_im = cropped_image.convert('RGB')
-        robot.logger.info('E')
         rgb_im.save(jpg_file_path)
-        robot.logger.info('F')
         file_url = SERVER_URL + '/screenshots/' + filename + '.jpg'
-        robot.logger.info('G')
         os.remove(png_file_path)
-        robot.logger.info('H')
         attachments_dict['image_url'] = file_url
         attachments_dict['fallback'] = keyword
         attachments_dict['actions'] = [

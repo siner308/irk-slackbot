@@ -1,13 +1,18 @@
+from gevent.monkey import patch_all
+patch_all()
+
 import os
 import sys
 sys.path.append(os.path.abspath('.'))
 
 import time
 import traceback
+
+import gevent
+from gevent.pool import Pool
 from importlib import import_module
 from slackclient import SlackClient
 from slacker import Slacker
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 from settings import APPS, CMD_PREFIX, CMD_LENGTH, MAX_WORKERS, SLACK_TOKEN
 from chromedriver import ChromeDriver
@@ -53,11 +58,12 @@ def load_apps():
 
 class Robot(object):
     def __init__(self):
+        self.logger = logger
         self.client = SlackClient(SLACK_TOKEN)
         self.slacker = Slacker(SLACK_TOKEN)
         self.apps, self.docs = load_apps()
-        self.logger = logger
         self.chrome = ChromeDriver(self)
+        self.pool = Pool(MAX_WORKERS)
 
     def handle_message(self, message):
         channel, user, text = message
@@ -71,7 +77,8 @@ class Robot(object):
             return
 
         try:
-            app.run(self, channel, user, payloads)
+            self.pool.apply_async(func=app.run,
+                                  args=(self, channel, user, payloads))
         except:
             self.logger.error(traceback.format_exc())
 
@@ -101,14 +108,9 @@ class Robot(object):
             events = self.read_message()
             if events:
                 messages = extract_messages(events)
-                if messages:
-                    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                        try:
-                            executor.map(self.handle_message, messages)
-                        except TimeoutError:
-                            self.logger.error(traceback.format_exc())
-            else:
-                time.sleep(0.3)
+                for message in messages:
+                    self.handle_message(message)
+            gevent.sleep(0.3)
 
     def disconnect(self):
         if self.client and self.client.server and self.client.server.websocket:
