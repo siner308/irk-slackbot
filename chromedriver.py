@@ -30,7 +30,7 @@ class ChromeDriver:
     def lock(self, lock_id):
         if not self.check_lock():
             self.lock_id = lock_id
-            self.locked_at = datetime.now().strftime('%yy-%mm-%dd %HH:MM:SS')
+            self.locked_at = datetime.now().strftime('%H:%M:%S')
             return True
         return False
 
