@@ -1,5 +1,8 @@
 settings.py
 __pycache__
 venv
-irk.log
 log
+.idea
+html
+honey.log
+irk.log
