@@ -1,16 +1,13 @@
 # python
-import os
 import datetime
 import time
 from random import choice
 from uuid import uuid4
 
-# library
-from PIL import Image
 
 # local
 from . import on_command
-from settings import ZABGRESS_ICON_URL, GIPHY_ICON_URL, STATIC_ROOT, SERVER_URL, CHANNEL, RED, ORANGE, GREEN, BOT_NAME, \
+from settings import ZABGRESS_ICON_URL, GIPHY_ICON_URL, CHANNEL, RED, ORANGE, GREEN, BOT_NAME, \
     MAX_LOAD_TIME
 from apps.utils.google.maps import get_location
 from apps.giphy import get_giphy_image_url
@@ -28,8 +25,6 @@ def run(robot, channel, user, tokens):
     attachments_dict['mrkdwn_in'] = ['text']
     attachments_dict['text'] = '`고장났으면 신나를 외쳐!`'
 
-    file_dir = STATIC_ROOT + '/screenshots/'
-    origin_bounding_box = (20, 140, 1860, 880)
     now = datetime.datetime.now()
 
     tokens = list(tokens)
@@ -182,16 +177,8 @@ def run(robot, channel, user, tokens):
     # Saving Screenshot
     robot.logger.info('[%s] Saving Screenshot...' % (time.time() - start_time))
     filename = now.strftime('%Y%m%d%H%M%S')
-    png_file_path = file_dir + filename + '.png'
-    jpg_file_path = file_dir + filename + '.jpg'
     try:
-        robot.chrome.driver.save_screenshot(png_file_path)
-        base_image = Image.open(png_file_path)
-        cropped_image = base_image.crop(origin_bounding_box)
-        rgb_im = cropped_image.convert('RGB')
-        rgb_im.save(jpg_file_path)
-        file_url = SERVER_URL + '/screenshots/' + filename + '.jpg'
-        os.remove(png_file_path)
+        file_url = robot.chrome.save_screenshot(filename)
         attachments_dict['image_url'] = file_url
         attachments_dict['fallback'] = keyword
         attachments_dict['text'] = message
