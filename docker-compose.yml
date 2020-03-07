@@ -7,15 +7,5 @@ services:
     restart: always
     container_name: irkbot-listener
     volumes:
-      - ./html/screenshots:/app/html/screenshots
+      - /mnt/irkbot/nginx/html/screenshots:/app/html/screenshots
       - ./log/bot:/app/log/bot
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "5784:80"
-    restart: always
-    container_name: irkbot-nginx
-    volumes:
-      - ./html:/usr/share/nginx/html
-      - ./log/nginx:/var/log/nginx
