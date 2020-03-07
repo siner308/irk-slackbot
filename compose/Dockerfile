@@ -38,7 +38,6 @@ RUN pip3 install -r /requirements.txt
 COPY ./robot.py /app/robot.py
 COPY ./settings.py /app/settings.py
 COPY ./logger.py /app/logger.py
-COPY ./slack.py /app/slack.py
 COPY ./chromedriver.py /app/chromedriver.py
 COPY ./chromedriver /app/chromedriver
 COPY ./apps /app/apps

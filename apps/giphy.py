@@ -10,7 +10,6 @@ import re
 import random
 import requests
 from urllib import parse
-from slack import slack_notify
 from settings import CHANNEL, GIPHY_ICON_URL, GIPHY_KEY
 
 
@@ -79,8 +78,8 @@ def run(robot=None, channel=None, user=None, tokens=None):
     attachments_dict['text'] = text
     attachments_dict['image_url'] = image_url
     attachments = [attachments_dict]
-    slack_notify(text=slack_message, channel=channel, username='giphy', attachments=attachments,
-                 icon_url=GIPHY_ICON_URL)
+    robot.slacker.chat.post_message(text=slack_message, channel=channel, username='giphy', attachments=attachments,
+                                    icon_url=GIPHY_ICON_URL)
 
 
 # if '__main__' == __name__:
