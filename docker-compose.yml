@@ -9,8 +9,6 @@ services:
     volumes:
       - ./html/screenshots:/app/html/screenshots
       - ./log/bot:/app/log/bot
-    environment:
-      - TEST=true
 
   nginx:
     image: nginx:alpine
