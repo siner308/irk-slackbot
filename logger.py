@@ -1,6 +1,6 @@
 import sys
 import logging
-from settings import TEST
+from settings import TEST, LOG_DIR
 
 
 def getLogger():
@@ -10,7 +10,7 @@ def getLogger():
     if TEST:
         handler = logging.StreamHandler(sys.stdout)
     else:
-        handler = logging.FileHandler('honey.log')
+        handler = logging.FileHandler('%s/honey.log' % LOG_DIR)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
 
