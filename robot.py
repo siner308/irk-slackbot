@@ -16,7 +16,7 @@ from slacker import Slacker
 
 from settings import APPS, CMD_PREFIX, CMD_LENGTH, MAX_WORKERS, SLACK_TOKEN
 from chromedriver import ChromeDriver
-from logger import logger
+from logger import getLogger
 
 
 def extract_messages(events):
@@ -58,7 +58,7 @@ def load_apps():
 
 class Robot(object):
     def __init__(self):
-        self.logger = logger
+        self.logger = getLogger()
         self.client = SlackClient(SLACK_TOKEN)
         self.slacker = Slacker(SLACK_TOKEN)
         self.apps, self.docs = load_apps()
@@ -124,7 +124,7 @@ if '__main__' == __name__:
     robot = Robot()
     try:
         robot.run()
-        print('Initialize Robot Complete...')
+        robot.logger.info('Initialize Robot Complete...')
     except KeyboardInterrupt as e:
         robot.logger.info('Honey Shutdown By User.')
     finally:
