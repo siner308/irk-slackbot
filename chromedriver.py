@@ -89,7 +89,7 @@ class ChromeDriver:
         self.driver.find_element_by_name('signIn').click()
         sleep(1)
         self.driver.find_element_by_name('Passwd').send_keys(GOOGLE_PASSWORD)
-        self.driver.find_element_by_id('signIn').click()
+        self.driver.find_element_by_id('submit').click()
         sleep(1)
         self.driver.find_element_by_id('submit_approve_access').click()
         sleep(1)
